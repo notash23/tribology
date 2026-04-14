@@ -212,6 +212,5 @@ p, h3 {
 
 .flex-horizontal .plot{
   flex:1;
-  
 }
 </style>
