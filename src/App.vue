@@ -80,17 +80,27 @@ const setChartOptions = () => {
 
 <template>
   <h1>Lubrication Theory</h1>
-  <p>This is a simulator of Navier Stokes with the top of the lid moving at the speed specified. Play around and see what you find!</p>
-
+  
+  <p>Welcome to more simulator of liquid in a box! Below you can find a video of the simulation done on python as a video.</p>
+  <Card class="plot">
+    <template #content>
+      <video autoplay muted loop >
+          <source src="./assets/animation.mp4" type="video/mp4">\
+          Your browser does not support the video tag.
+      </video>
+    </template>
+  </Card>
+  
+  <p>This is a simulator of the same algorithm running on this website. Play around and see what you find!</p>
   <div class="slider-horizontal">
-    <h3>Height</h3>
+    <h3>L</h3>
     <Slider v-model="height" style="width: 75%;"/>
     <h3>{{ height }}</h3>
   </div>
   
   <div class="flex-horizontal">
     <div class="slider-vertical">
-      <h3>Speed</h3>
+      <h3>U</h3>
       <Slider class="" v-model="speed" orientation="vertical"/>
       <h3>{{ speed }}</h3>
     </div>
@@ -103,7 +113,7 @@ const setChartOptions = () => {
     
     
     <div class="slider-vertical">
-      <h3>Pressure Gradient</h3>
+      <h3>P</h3>
       <Slider v-model="pressure_grad" orientation="vertical"/>
       <h3> {{ pressure_grad }}</h3>
     </div>
