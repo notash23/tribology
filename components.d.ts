@@ -12,7 +12,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Card: typeof import('primevue/card')['default']
-    InputText: typeof import('primevue/inputtext')['default']
     Slider: typeof import('primevue/slider')['default']
   }
 }
