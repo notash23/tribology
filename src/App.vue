@@ -323,6 +323,7 @@ h3 {
   width: 62px;
   max-height: calc(100% - 40px);
 }
+
 .slider-vertical > div {
   flex: 1;
 }
@@ -337,13 +338,11 @@ h3 {
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  /* margin-bottom: 15pt; */
 }
 
 .flex-horizontal {
   display: flex;
   justify-content: center;
-  /* align-items: center; */
   width: 100%;
 }
 
