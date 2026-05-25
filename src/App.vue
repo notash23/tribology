@@ -1,4 +1,5 @@
-// TODO: design better arrows (and make them resizable)
+// TODO: design better arrows
+// TODO: change boundary when sliders change
 
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
@@ -137,7 +138,7 @@ const setChartData = () => {
       {
         data: points,
         pointStyle: () => (ctx: CanvasRenderingContext2D) => {
-          const size = 10
+          const size = chart.width/75
           
           ctx.beginPath()
           ctx.moveTo(0, -size)
@@ -200,7 +201,7 @@ const setChartOptions = () => {
       </p>
       <Card class="plot">
         <template #content>
-          <video autoplay muted loop>
+          <video playsinline autoplay muted loop preload="auto">
             <source src="./assets/animation.mp4" type="video/mp4" />
             \ Your browser does not support the video tag.
           </video>
