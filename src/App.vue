@@ -1,5 +1,4 @@
-// TODO: use asynchronous functions for calling 'step' and timing them right // TODO: use scrollbar
-as parameters in step // TODO: design better arrows (and make them resizable) //TODO: make a reload button
+// TODO: design better arrows (and make them resizable)
 
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
@@ -12,38 +11,71 @@ interface Point {
   y: number
 }
 
-const items = 4
+const items = 5
 const x_steps = 21
 const y_steps = 21
 
-const height = ref(50)
-const speed = ref(50)
-const pressure_grad = ref(50)
+const height = ref(1)
+const speed = ref(1)
+const pressure_grad = ref(0.2)
 
 const myChart = ref<InstanceType<typeof Chart>>(null!)
 let chart: ChartType
 
 let setupArray: (size: number) => void
-let step: (uvpt: number) => void
+let step: (uvpmt: number, P: number, U: number, h: number) => void
 let free: (size: number) => void
 let ptr: number
+let arr: Float64Array
 let memory = new WebAssembly.Memory({
   initial: 256,
   maximum: 512,
 })
 
-function set_angles(arr: Float64Array) {
-  const angles: Array<number> = []
-  for (let i = 0; i < x_steps * y_steps; i++) {
-    angles.push(arr[3 * (x_steps * y_steps) + i] ?? 0)
+let prevTime: number = 0
+// let total = 0
+// let count = 0
+async function updateGraph(): Promise<number> {
+  if (!step) {
+    prevTime = Date.now()
+    return 0;
   }
-  if (chart.data.datasets[0]){
-    chart.data.datasets[0].pointRotation = angles
-  } 
-  chart.update('active')
-  console.log(performance.now());
-  console.log(Date.now());
+
+  const time_diff = Date.now() - prevTime
+  // total += time_diff
+  // count++
+  // console.log(total/count);
+  
+  step(ptr, pressure_grad.value, speed.value, height.value)
+  
+  const magnitude: Array<String> = []
+  for (let i = 0; i < x_steps * y_steps; i++) {
+    magnitude.push(`hsl(150, 100%, ${arr[3 * (x_steps * y_steps) + i] ?? 0}%)`)
+  }
+  
+
+  const rotation: Array<number> = []
+  for (let i = 0; i < x_steps * y_steps; i++) {
+    rotation.push(arr[4 * (x_steps * y_steps) + i] ?? 0)
+  }
+  
+  if (chart && chart.data.datasets[0]) {
+    chart.data.datasets[0].backgroundColor = magnitude as any
+    // @ts-expect-error
+    chart.data.datasets[0].rotation = rotation
+    chart.update('active')
+  }
+
+  prevTime = Date.now()
+  //TODO: make 'PID' adjusment everytime the error overflows
+  return 40;
 }
+
+function asyncMethodHandler() {
+  updateGraph().then(time => setTimeout(asyncMethodHandler, time));  
+}
+
+asyncMethodHandler()
 
 getWasm({
   js: {
@@ -69,25 +101,13 @@ getWasm({
 }).then((instance) => {
   memory = (instance.exports.memory ?? memory) as WebAssembly.Memory
   ptr = (instance.exports._malloc as (size: number) => number)(items * x_steps * y_steps * 8)
+  arr = new Float64Array(memory.buffer, ptr);
 
-  const arr = new Float64Array(memory.buffer, ptr);
-
-  
   setupArray = (instance.exports.setupArray ?? Function) as (size: number) => void
-  step = (instance.exports.step ?? Function) as (uvpt: number) => void
+  step = (instance.exports.step ?? Function) as (uvpmt: number) => void
   free = (instance.exports._free ?? Function) as (size: number) => void
 
   setupArray(ptr)
-  let count = 10
-  const func = () => {
-    step(ptr)
-    set_angles(arr)
-    count--
-    if (count > 0) {
-      setTimeout(func, 300)
-    }
-  }
-  setTimeout(func, 500)
 })
 
 const onChartLoaded = () => {
@@ -116,9 +136,17 @@ const setChartData = () => {
     datasets: [
       {
         data: points,
-        pointStyle: canvas,
-        pointRadius: 2,
-        backgroundColor: 'rgb(255, 99, 132)',
+        pointStyle: () => (ctx: CanvasRenderingContext2D) => {
+          const size = 10
+          
+          ctx.beginPath()
+          ctx.moveTo(0, -size)
+          ctx.lineTo(size, size)
+          ctx.lineTo(0, size / 2)
+          ctx.lineTo(-size, size)
+          ctx.closePath()
+        },
+        backgroundColor: 'hsl(150, 100%, 40%)'
       },
     ],
   }
@@ -160,27 +188,6 @@ const setChartOptions = () => {
     },
   }
 }
-
-const canvas = document.createElement('canvas')
-canvas.width = 30
-canvas.height = 30
-
-const c = canvas.getContext('2d')!
-c.translate(canvas.width / 2, canvas.height / 2)
-
-const size = 10
-
-c.beginPath()
-c.moveTo(0, -size)
-c.lineTo(size, size)
-c.lineTo(0, size / 2)
-c.lineTo(-size, size)
-c.closePath()
-
-c.fillStyle = 'red'
-c.fill()
-c.strokeStyle = 'red'
-c.stroke()
 </script>
 
 <template>
@@ -206,16 +213,17 @@ c.stroke()
         This is a simulator of the same algorithm running on this website. Play around and see what
         you find!
       </p>
+      <Button label="Reset" @click="() => { setupArray(ptr) }"/>
       <div class="slider-horizontal">
         <h3>L</h3>
-        <Slider v-model="height" style="width: 100%" />
+        <Slider v-model="height" :min="0.5" :max="5" :step="0.01" style="width: 100%" />
         <h3>{{ height }}</h3>
       </div>
 
       <div class="flex-horizontal">
         <div class="slider-vertical">
           <h3>U</h3>
-          <Slider class="" v-model="speed" orientation="vertical" />
+          <Slider class="" v-model="speed" :min="1" :max="10" :step="0.1" orientation="vertical" />
           <h3>{{ speed }}</h3>
         </div>
 
@@ -227,7 +235,7 @@ c.stroke()
 
         <div class="slider-vertical">
           <h3>P</h3>
-          <Slider v-model="pressure_grad" orientation="vertical" />
+          <Slider v-model="pressure_grad" :min="0" :max="0.5" :step="0.01" orientation="vertical" />
           <h3>{{ pressure_grad }}</h3>
         </div>
       </div>

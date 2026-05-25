@@ -8,6 +8,9 @@ import {PrimeVueResolver} from '@primevue/auto-import-resolver';
 
 // https://vite.dev/config/
 export default defineConfig({
+  optimizeDeps: {
+    exclude: ['chart.js']
+  },
   plugins: [
     vue(),
     vueDevTools(),
